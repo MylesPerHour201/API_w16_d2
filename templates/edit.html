@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0">
+    <title>Edit Task</title>
+</head>
+<body>
+
+<h1>Edit Task</h1>
+
+<form id="editTaskForm">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description"></textarea>
+    <label for="completed">Completed:</label>
+    <input type="checkbox" id="completed" name="completed">
+    <button type="button" onclick="updateTask()">Update Task</button>
+    <button type="button" onclick="deleteTask()">Delete Task</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    fetchTaskDetails();
+
+    function fetchTaskDetails() {
+        var taskId = window.location.pathname.split('/').pop();
+        fetch(`/api/tasks/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                var task = data.task;
+                document.getElementById('title').value = task.title;
+                document.getElementById('description').value = task.description;
+                document.getElementById('completed').checked = task.completed;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+    function updateTask() {
+        var taskId = window.location.pathname.split('/').pop();
+        var title = document.getElementById('title').value;
+        var description = document.getElementById('description').value;
+        var completed = document.getElementById('completed').checked;
+
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                completed: completed
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            var task = data.task;
+            alert(`Task updated successfully:\nTitle: ${task.title}\nDescription: ${task.description}\nCompleted: ${task.completed}`);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function deleteTask() {
+        var taskId = window.location.pathname.split('/').pop();
+
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.result) {
+                alert('Task deleted successfully');
+                window.location.href = '/';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+});
+</script>
+
+</body>
+</html>

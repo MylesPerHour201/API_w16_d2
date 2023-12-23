@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0">
+    <title>Task Manager</title>
+</head>
+<body>
+
+<h1>Task Manager</h1>
+
+<ul>
+    {% for task in tasks %}
+      <li>
+        {{ task.title }} - {{ task.description }} ({{ "Completed" if task.completed else "Incomplete" }})
+        <a href="{{ url_for('api.get_task', task_id=task.id) }}">Details</a>
+        <a href="{{ url_for('edit', task_id=task.id) }}">Edit</a>
+        <a href="{{ url_for('api.update_task', task_id=task.id) }}">
+          <button onclick="updateTaskStatus()">Update Status</button>
+        </a>
+        <a href="{{ url_for('api.delete_task', task_id=task.id) }}">
+          <button onclick="deleteTask()">Delete</button>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+
+<form id="createTaskForm">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description"></textarea>
+    <button type="button" onclick="createTask()">Create Task</button>
+    <button type="button" onclick="deleteTask()">Delete</button>
+    <button type="button" onclick="updateTaskStatus()">Update Status</button>
+</form>
+
+<script>
+function updateTaskStatus(taskId) {
+    fetch(`/api/tasks/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            var task = data.task;
+            task.completed = !task.completed;
+
+            fetch(`/api/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(task)
+            })
+            .then(response => response.json())
+            .then(updatedData => {
+                var updatedTask = updatedData.task;
+                alert(`Task status updated:\nTitle: ${updatedTask.title}\nStatus: ${updatedTask.completed ? 'Completed' : 'Incomplete'}`);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function deleteTask(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.result) {
+                alert('Task deleted successfully');
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function createTask() {
+    var title = document.getElementById('title').value;
+    var description = document.getElementById('description').value;
+
+    fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            title: title,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        var task = data.task;
+        var taskList = document.querySelector('ul');
+        var newTaskItem = document.createElement('li');
+        newTaskItem.textContent = `${task.title} - ${task.description} (${task.completed ? 'Completed' : 'Incomplete'})`;
+        taskList.appendChild(newTaskItem);
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+
+</body>
+</html>
